@@ -17,7 +17,7 @@ Stefani Moore <stefani.moore@ucdenver.edu>
 
 Shawn Johnson <shawn.a.johnson@ucdenver.edu>
 
-Lena Banks <lena.banks@ucdenve.edu>
+Lena Banks <lena.banks@ucdenver.edu>
 
 Sara Kim <sara.kim@ucdenver.edu>
 
