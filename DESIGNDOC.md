@@ -134,16 +134,9 @@ C2: Suppose threads A, B, and C have nice values 0, 1, and 2. Each has a recent_
             </tbody>
 </table>
 
->> C3: Did any ambiguities in the scheduler specification make values
+C3: Did any ambiguities in the scheduler specification make values in the table uncertain?  If so, what rule did you use to resolve them? Does this match the behavior of your scheduler?
 
->> in the table uncertain?  If so, what rule did you use to resolve
-
->> them?  Does this match the behavior of your scheduler?
-
-
->> C4: How is the way you divided the cost of scheduling between code
-
->> inside and outside interrupt context likely to affect performance?
+C4: How is the way you divided the cost of scheduling between code inside and outside interrupt context likely to affect performance?
 
 
 #### RATIONALE
