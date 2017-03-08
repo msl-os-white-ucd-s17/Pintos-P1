@@ -11,9 +11,9 @@
 
                    
 
----- GROUP ----
+## GROUP
 
-Team White
+## Team White
 
 Stefani Moore <stefani.moore@ucdenver.edu>
 
@@ -23,8 +23,7 @@ Lena Banks <lena.banks@ucdenve.edu>
 
 Sara Kim <sara.kim@ucdenver.edu>
 
-
----- PRELIMINARIES ----
+#### PRELIMINARIES
 
 
 >> If you have any preliminary comments on your submission, notes for the
@@ -39,12 +38,10 @@ Sara Kim <sara.kim@ucdenver.edu>
 >> text, lecture notes, and course staff.
 
 
-                 ALARM CLOCK
-
-                 ===========
+### ALARM CLOCK
 
 
----- DATA STRUCTURES ----
+#### DATA STRUCTURES
 
 
 >> A1: Copy here the declaration of each new or changed `struct' or
@@ -54,7 +51,7 @@ Sara Kim <sara.kim@ucdenver.edu>
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
 
----- ALGORITHMS ----
+#### ALGORITHMS
 
 
 >> A2: Briefly describe what happens in a call to timer_sleep(),
@@ -67,7 +64,7 @@ Sara Kim <sara.kim@ucdenver.edu>
 >> the timer interrupt handler?
 
 
----- SYNCHRONIZATION ----
+#### SYNCHRONIZATION
 
 
 >> A4: How are race conditions avoided when multiple threads call
@@ -88,12 +85,10 @@ Sara Kim <sara.kim@ucdenver.edu>
 >> another design you considered?
 
 
-             PRIORITY SCHEDULING
-
-             ===================
+### PRIORITY SCHEDULING
 
 
----- DATA STRUCTURES ----
+#### DATA STRUCTURES
 
 
 >> B1: Copy here the declaration of each new or changed `struct' or
@@ -110,7 +105,7 @@ Sara Kim <sara.kim@ucdenver.edu>
 >> .png file.)
 
 
----- ALGORITHMS ----
+#### ALGORITHMS
 
 
 >> B3: How do you ensure that the highest priority thread waiting for
@@ -128,7 +123,7 @@ Sara Kim <sara.kim@ucdenver.edu>
 >> on a lock that a higher-priority thread is waiting for.
 
 
----- SYNCHRONIZATION ----
+#### SYNCHRONIZATION
 
 
 >> B6: Describe a potential race in thread_set_priority() and explain
@@ -146,12 +141,10 @@ Sara Kim <sara.kim@ucdenver.edu>
 >> another design you considered?
 
 
-              ADVANCED SCHEDULER
-
-              ==================
+### ADVANCED SCHEDULER
 
 
----- DATA STRUCTURES ----
+#### DATA STRUCTURES
 
 
 >> C1: Copy here the declaration of each new or changed `struct' or
@@ -161,7 +154,7 @@ Sara Kim <sara.kim@ucdenver.edu>
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
 
----- ALGORITHMS ----
+#### ALGORITHMS
 
 
 >> C2: Suppose threads A, B, and C have nice values 0, 1, and 2.  Each
@@ -212,7 +205,7 @@ ticks   A   B   C   A   B   C   to run
 >> inside and outside interrupt context likely to affect performance?
 
 
----- RATIONALE ----
+#### RATIONALE
 
 
 >> C5: Briefly critique your design, pointing out advantages and
@@ -237,9 +230,7 @@ ticks   A   B   C   A   B   C   to run
 >> numbers, why did you do so?  If not, why not?
 
 
-               SURVEY QUESTIONS
-
-               ================
+### SURVEY QUESTIONS
 
 
 Answering these questions is optional, but it will help us improve the
