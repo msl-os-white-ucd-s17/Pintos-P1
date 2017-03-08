@@ -20,7 +20,9 @@
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
 
-/* Wait list for timer_sleep */
+/* Wait list for timer_sleep
+ * Elements are sorted in ascending order according to ticks
+ */
 struct list sleep_list;
 
 /* Number of loops per timer tick.
@@ -40,7 +42,7 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
-	list_init (&sleep_list);
+  list_init (&sleep_list);
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -88,30 +90,30 @@ timer_elapsed (int64_t then)
   return timer_ticks () - then;
 }
 
-/* Sleeps for approximately TICKS timer ticks.  Interrupts must
-   be turned on. */
+/* MODIFIED
+ * Sleeps for approximately TICKS timer ticks.  Interrupts must be turned OFF.
+ */
 void
 timer_sleep (int64_t ticks) 
 {
-  struct thread *cur_thread;
-	enum intr_level old_level;
-
-  ASSERT (intr_get_level () == INTR_ON);
-
-	if (ticks <= 0)
+	if (ticks <= 0) // No need to consider negative or zero ticks.
 		return;
 
-	old_level = intr_disable();
+    struct thread *cur_thread; // Calling thread.
+    enum intr_level old_level; // Interrupts ON or OFF?
 
-	cur_thread = thread_current();
-	cur_thread->sleepTickCount = timer_ticks() + ticks;
+    ASSERT (intr_get_level () == INTR_ON); // Do not proceed if interrupts are already OFF.
 
-	list_insert_ordered (&sleep_list, &cur_thread->elem,
-													compare_ticks, NULL);
+    old_level = intr_disable(); // Disable interrupts so that ticks may be reliably calculated and thread can be blocked.
 
-	thread_block();
+	cur_thread = thread_current(); // Calling thread
+	cur_thread->sleepTickCount = timer_ticks() + ticks; // Set thread wake up time in its TCB.
 
-	intr_set_level(old_level);
+	list_insert_ordered (&sleep_list, &cur_thread->elem, compare_ticks, NULL); // Insert thread into list ordered by ascending wake up time.
+
+	thread_block(); // Change current thread's TCB status to THREAD_BLOCKED. Schedule next thread. Must be called with interrupts disabled.
+
+	intr_set_level(old_level); //Enable interrupts.
   
 }
 
@@ -185,33 +187,36 @@ timer_print_stats (void)
   printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
 
-/* Timer interrupt handler. */
+/* MODIFIED
+ * Timer interrupt handler.
+ *
+ * */
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
-	struct list_elem *p_elem;
-	struct thread *p_thread;
+	struct list_elem *p_elem; // Pointer to thread wake up time
+	struct thread *p_thread; // Pointer to TCB
 	bool preempt = false;
 
-  ticks++;
-  thread_tick ();
+    ticks++;
+    thread_tick (); // Increment global thread tick count
 
 	while (!list_empty (&sleep_list))
 	{
-		p_elem = list_front (&sleep_list);
-		p_thread = list_entry (p_elem, struct thread, elem);
-		if (p_thread->sleepTickCount > ticks)
+		p_elem = list_front (&sleep_list); // Thread closest to wake up time
+		p_thread = list_entry (p_elem, struct thread, elem); // Get TCB from sleep list element
+		if (p_thread->sleepTickCount > ticks) // Terminate if sleepTickCount > ticks because all succeeding elements are guaranteed to hold the same condition.
 		{
 				break;
 		}
 
-		list_remove (p_elem);
-		thread_unblock (p_thread);
+		list_remove (p_elem); // Remove from sleep list
+		thread_unblock (p_thread); // Unblock play
 		preempt = true;
 	}
 
 	if (preempt)
-		intr_yield_on_return ();
+		intr_yield_on_return (); // Schedule threads that have been woken up
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

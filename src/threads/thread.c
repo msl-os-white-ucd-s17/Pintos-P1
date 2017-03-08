@@ -119,8 +119,9 @@ thread_start (void)
   sema_down (&idle_started);
 }
 
-/* Called by the timer interrupt handler at each timer tick.
-   Thus, this function runs in an external interrupt context. */
+/*
+ * Called by the timer interrupt handler at each timer tick. Thus, this function runs in an external interrupt context.
+ * */
 void
 thread_tick (void) 
 {
@@ -585,11 +586,11 @@ allocate_tid (void)
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
-/* Compare the ticks of two threads */
+/* ADDED
+ * Compare the ticks of two threads
+ * */
 bool
-compare_ticks(const struct list_elem *t1,
-							const struct list_elem *t2,
-							void *aux UNUSED)
+compare_ticks(const struct list_elem *t1, const struct list_elem *t2, void *aux UNUSED)
 {
 	struct thread *thread_t1 = list_entry (t1, struct thread, elem);
 	struct thread *thread_t2 = list_entry (t2, struct thread, elem);
