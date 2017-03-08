@@ -26,8 +26,8 @@ Sara Kim <sara.kim@ucdenver.edu>
 
 > #### NOTES & TO-DO
 > * Add wakeup time to TCB in `threads\thread.h` to indicate that the thread is blocked & should not be scheduled.
-> * Modify `void timer_sleep(int64_t ticks)` to remove calling thread from ready list,  insert in sorted sleeping list. 
-> * Add `void wake_them_up()` to traverse sleeping thread list and wake up (unblock) appropriate threads. Implementation must be fast and minimal! Sorted sleeping thread list is important here!
+> * Modify `void timer_sleep(int64_t ticks)` to remove calling thread from ready list, insert in sorted sleeping list. 
+> * Add `void wake_them_up()` to traverse sleeping thread list & wake up (unblock) appropriate threads. Implementation must be fast & minimal! Sorted sleeping thread list is important here!
 > * Modify `void thread_tick(void)` to call `void wake_them_up()`
 
 
