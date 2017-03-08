@@ -20,9 +20,6 @@
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
 
-/* Wait list for timer_sleep */
-struct list sleep_list;
-
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
 static unsigned loops_per_tick;
@@ -40,7 +37,6 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
-	list_init (&sleep_list);
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -93,26 +89,11 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-  struct thread *cur_thread;
-	enum intr_level old_level;
+  int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
-
-	if (ticks <= 0)
-		return;
-
-	old_level = intr_disable();
-
-	cur_thread = thread_current();
-	cur_thread->sleepTickCount = timer_ticks() + ticks;
-
-	list_insert_ordered (&sleep_list, &cur_thread->elem,
-													compare_ticks, NULL);
-
-	thread_block();
-
-	intr_set_level(old_level);
-  
+  while (timer_elapsed (start) < ticks) 
+    thread_yield ();
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -189,29 +170,8 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
-	struct list_elem *p_elem;
-	struct thread *p_thread;
-	bool preempt = false;
-
   ticks++;
   thread_tick ();
-
-	while (!list_empty (&sleep_list))
-	{
-		p_elem = list_front (&sleep_list);
-		p_thread = list_entry (p_elem, struct thread, elem);
-		if (p_thread->sleepTickCount > ticks)
-		{
-				break;
-		}
-
-		list_remove (p_elem);
-		thread_unblock (p_thread);
-		preempt = true;
-	}
-
-	if (preempt)
-		intr_yield_on_return ();
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
