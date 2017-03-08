@@ -71,6 +71,8 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
+
+
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
    general and it is possible in this case only because loader.S
@@ -582,3 +584,14 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+/* Compare the ticks of two threads */
+bool
+compare_ticks(const struct list_elem *t1,
+							const struct list_elem *t2,
+							void *aux UNUSED)
+{
+	struct thread *thread_t1 = list_entry (t1, struct thread, elem);
+	struct thread *thread_t2 = list_entry (t2, struct thread, elem);
+	return thread_t1->sleepTickCount < thread_t2->sleepTickCount;
+}
