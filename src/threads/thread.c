@@ -221,7 +221,7 @@ thread_block (void)
 }
 
 /* MODIFIED
- * Transitions a blocked thread T to the ready-to-run state.
+   Transitions a blocked thread T to the ready-to-run state.
    This is an error if T is not blocked.  (Use thread_yield() to
    make the running thread ready.)
 
@@ -239,7 +239,7 @@ thread_unblock (struct thread *t)
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
 
-  list_insert_ordered (&ready_list, &t->elem, priorityCompare, NULL); //Modified
+  list_insert_ordered (&ready_list, &t->elem, priority_compare, NULL); //Modified
 
   t->status = THREAD_READY;
   intr_set_level (old_level);
@@ -312,7 +312,7 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) 
-    list_insert_ordered (&ready_list, &cur->elem, priorityCompare, NULL); // Modified
+    list_insert_ordered (&ready_list, &cur->elem, priority_compare, NULL); // Modified
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -335,11 +335,17 @@ thread_foreach (thread_action_func *func, void *aux)
     }
 }
 
-/* Sets the current thread's priority to NEW_PRIORITY. */
+/* MODIFIED
+ * Sets the current thread's priority to NEW_PRIORITY.
+ */
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
+    enum intr_level old_level = intr_disable ();
+    struct thread *current_thread = thread_current();
+    thread_current()->priority = new_priority;
+    thread_preempt();
+    intr_set_level(old_level);
 }
 
 /* Returns the current thread's priority. */
@@ -585,12 +591,27 @@ allocate_tid (void)
   return tid;
 }
 
-
-list_less_func priorityCompare (const struct list_elem *a, const struct list_elem *b, void *aux) {
+/* ADDED
+ * Compares the priorities of two threads
+ * Returns true if t1_priority > t2_priority, false otherwise
+ */
+list_less_func priority_compare (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED) {
   struct thread *t1 = list_entry(a, struct thread, elem);
   struct thread *t2 = list_entry(b, struct thread, elem);
   return t1->priority > t2->priority;
 }
+
+/* ADDED
+ * Checks that the first element in the ready list has a priority less or equal to current thread
+ * If true, do nothing. If false, preempt current thread.
+*/
+void thread_preempt(void) {
+    ASSERT (intr_get_level() == INTR_OFF);
+    if (!list_empty(&ready_list) && thread_current()->priority < list_entry(list_front(&ready_list), struct thread, elem)->priority) {
+        thread_yield(); // Schedule higher priority thread to run
+    }
+}
+
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
