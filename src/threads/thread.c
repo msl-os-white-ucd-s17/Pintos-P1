@@ -87,7 +87,7 @@ static tid_t allocate_tid (void);
    It is not safe to call thread_current() until this function
    finishes. */
 void
-thread_init (void) 
+thread_init (void)
 {
   ASSERT (intr_get_level () == INTR_OFF);
 
@@ -166,8 +166,7 @@ thread_print_stats (void)
    PRIORITY, but no actual priority scheduling is implemented.
    Priority scheduling is the goal of Problem 1-3. */
 tid_t
-thread_create (const char *name, int priority,
-               thread_func *function, void *aux) 
+thread_create (const char *name, int priority, thread_func *function, void *aux)
 {
   struct thread *t;
   struct kernel_thread_frame *kf;

@@ -189,7 +189,6 @@ timer_print_stats (void)
 
 /* MODIFIED
  * Timer interrupt handler.
- *
  * */
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
@@ -209,7 +208,6 @@ timer_interrupt (struct intr_frame *args UNUSED)
 		{
 				break;
 		}
-
 		list_remove (p_elem); // Remove from sleep list
 		thread_unblock (p_thread); // Unblock play
 		preempt = true;
