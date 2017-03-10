@@ -93,6 +93,11 @@ struct list_elem
     struct list_elem *next;     /* Next list element. */
   };
 
+struct donor_elem {
+    int donor_priority;
+    struct list_elem elem;
+};
+
 /* List. */
 struct list 
   {
