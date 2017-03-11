@@ -356,7 +356,7 @@ thread_set_priority (int new_priority)
 void thread_donate_set_priority(struct thread *t_donee) {
     enum intr_level old_level = intr_disable ();
     t_donee->effective_priority = thread_get_priority();
-    for (e = list_begin(t_donee->donors); e != list_end(t_donee->donors); e = list_next (e)) {
+    for (struct list_elem *e = list_begin(&t_donee->donors); e != list_end(&t_donee->donors); e = list_next (e)) {
         struct thread *t = list_entry (e, struct thread, list_elem);
         if (t->effective_priority < thread_get_priority()) {
             thread_donate_set_priority(t);
@@ -365,7 +365,7 @@ void thread_donate_set_priority(struct thread *t_donee) {
             break;
         }
     }
-    list_insert_ordered(t_donee->donors, thread_current()->donor_elem, priority_compare, NULL);
+    list_insert_ordered(&t_donee->donors, &thread_current()->donor_elem, priority_compare, NULL);
     intr_set_level(old_level);
 }
 /* Returns the current thread's priority. */
@@ -590,8 +590,7 @@ schedule (void)
   ASSERT (intr_get_level () == INTR_OFF);
   ASSERT (cur->status != THREAD_RUNNING);
   ASSERT (is_thread (next));
-
-
+    
   if (cur != next)
     prev = switch_threads (cur, next);
   thread_schedule_tail (prev);

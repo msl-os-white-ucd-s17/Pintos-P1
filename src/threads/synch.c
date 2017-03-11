@@ -202,7 +202,6 @@ lock_acquire (struct lock *lock)
   ASSERT (!lock_held_by_current_thread (lock));
   if (lock->holder != NULL && thread_get_priority() > lock->holder->effective_priority) { // If current thread effective priority > blocked thread
       thread_donate_set_priority(lock->holder);
-      list_sort()
   }
   sema_down(&lock->semaphore);
   lock->holder = thread_current();
