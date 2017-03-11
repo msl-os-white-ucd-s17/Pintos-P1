@@ -70,7 +70,6 @@ sema_down (struct semaphore *sema)
 
   while (sema->value == 0)
     {
-        thread_current()->blocking_lock = lock;
         list_insert_ordered(&sema->waiters, &thread_current ()->elem, //Insert thread into semaphore wait list based on priority
                           priority_compare, NULL);
         thread_block (); //Put thread to sleep while waiting
@@ -238,8 +237,7 @@ lock_release (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
   thread_current()->effective_priority = thread_current()->priority;
-  thread_current->blocking_lock = NULL;
-  lock->holder = NULL;
+\  lock->holder = NULL;
   sema_up (&lock->semaphore);
 }
 
