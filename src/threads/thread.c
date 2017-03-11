@@ -11,6 +11,9 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+/********NEW CHANGE ******************************/
+/* fixed-point needed for MLFQs calculation */
+#include "threads/fixed-point.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -58,6 +61,10 @@ static unsigned thread_ticks;   /* # of timer ticks since last yield. */
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 bool thread_mlfqs;
+
+/********NEW CHANGE ******************************/
+/* Fixed Integer to hold system load average */
+intToFixed (load_avg);
 
 static void kernel_thread (thread_func *, void *aux);
 
@@ -110,6 +117,14 @@ thread_start (void)
   sema_init (&idle_started, 0);
   thread_create ("idle", PRI_MIN, idle, &idle_started);
 
+  /********NEW CHANGE ******************************/
+  /* At thread start, load average is initialized to 0 */
+  load_avg = intToFixed(0);
+
+  /********NEW CHANGE ******************************/
+  /* At thread start, load average is initialized to 0 */
+  recent_cpu = intToFixed(0);
+   
   /* Start preemptive thread scheduling. */
   intr_enable ();
 
@@ -345,36 +360,42 @@ thread_get_priority (void)
   return thread_current ()->priority;
 }
 
+/********NEW CHANGE ******************************/
 /* Sets the current thread's nice value to NICE. */
 void
 thread_set_nice (int nice UNUSED) 
 {
-  /* Not yet implemented. */
+  thread_current () ->nice = nice;
+  mlfqs_calc_priority(thread_current() );
 }
 
+/********NEW CHANGE ******************************/
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  /*  */
+  return thread_current ()->nice;
 }
 
+/********NEW CHANGE ******************************/
 /* Returns 100 times the system load average. */
 int
 thread_get_load_avg (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  int valHundred = intToFixed(100);     // Change 100 to fixed point
+  return mulFixedFixed(load_avg, valHundred);
 }
 
+/********NEW CHANGE ******************************/
 /* Returns 100 times the current thread's recent_cpu value. */
 int
 thread_get_recent_cpu (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  int valHundred = intToFixed(100);
+  return mulFixedFixed(recent_cpu, valHundred);
 }
+
 
 /* Idle thread.  Executes when no other thread is ready to run.
 
@@ -464,6 +485,11 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->magic = THREAD_MAGIC;
 
+  /********NEW CHANGE ******************************/
+  /* Added initialize MLFQ values to 0 */
+  t->nice = intToFixed(0);
+  t->recent_cpu = intToFixed(0);
+   
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
@@ -582,3 +608,93 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+
+/************************IN PROGRESS************************/
+/* Still need to implement recalculation of new priority of 
+ * thread from mlfqs_calc_priority, set priority again
+
+ * Recent cpu for runnning thread increment by 1 for each interrupt
+
+ * Recalculation of recent cpu made when 
+ * timer_ticks () % TIMER_FREQ == 0
+
+ * Calculating load_avg updated every second when
+ * timer_ticks () % TIMER_FREQ == 0
+
+/********NEW CHANGE ******************************/
+/* Calculates the thread's priority based on new nice 
+priority = PRI_MAX - (recent_cpu / 4) - (nice * 2) */
+void mlfqs_calc_priority (struct thread *t)
+{
+    if (t != idle_thread)   // Make sure thread is running
+    {
+      int divder;
+      int dividerMINUSnice
+      int niceValue;
+      intToFixed(PRI_MAX);
+
+        niceValue = intToFixed(t->nice);
+        multiply = mulFixedInt(niceValue, 2);
+        divider = divFixedInt(t->recent_cpu, 4);
+        dividerMINUSnice = subFixedFixed(divFixedInt, multiply);
+        t->priority = subFixedFixed(PRI_MAX, dividerMINUSnice);
+    }
+
+    else 
+      return;
+    /* CLEAN UP/COMMENT*/
+}
+
+/********NEW CHANGE ******************************/
+/* Calculate recent CPU using calculated load_avg and recent_cpu 
+recent_cpu = (2 * load_avg) / (2 * load_avg + 1) * recent_cpu + nice */
+void mlfqs_calc_cpu (struct thread *t)
+{
+  int numTwo = intToFixed(2);             // Fixed point number 2
+  int numOne = intToFixed(1);             // Fixed point number 1
+    intToFixed(divided);                    // Fixed point to hold divided value
+    intToFixed(divider);                    // Fixed point to hold divider value
+    intToFixed(addedVal);                   // Fixed point to hold added value
+    intToFixed(multiplyVal);                // Fixed point to hold multiplied value
+
+      /* divided = (2 * load_avg) */
+      divided = mulFixedFixed(numTwo, load_avg);
+
+      /* addedVal = load_avg + 1 */
+      addedVal = addFixedFixed(load_avg, numOne);
+
+      /* divider = 2 * addedVal */
+      divider = mulFixedFixed(numTwo, addedVal);
+
+      /* multiplyVal = (divided / divider) * recent_cpu */
+      multiplyVal = mulFixedInt(divFixedFixed(divided, divider), t->recent_cpu);
+
+      /* recent_cpu = multiplyVal + nice -> (2 * load_avg) / (2 * load_avg + 1) * recent_cpu + nice */
+      t->recent_cpu = addFixedInt(multiplyVal, t->nice);
+
+}
+
+/********NEW CHANGE ******************************/
+/* Calculate load_avg using number of ready_threads and current load_avg 
+    load_avg = (59/60) * load_avg + (1/60) * ready_threads */
+void mlfqs_calc_load_avg (void)
+{
+    int numOne = intToFixed(1);           // Fixed point number 1
+    int numSixty = intToFixed(60);        // Fixed point number 60
+    int numFiftyNine = intToFixed(59);    // Fixed point number 59
+      intToFixed(multiply1);                // Fixed point to hold first multiplication value
+      intToFixed(multiply2);                // Fixed point to hold second multiplication value
+
+    /* Use list_size from list.c to find number of ready threads */
+    int ready_threads = intToFixed(list_size(&ready_list)); 
+
+    /* multiply1 = (59/60) * loadAvg */    
+    multiply1 = mulFixedFixed(divFixedFixed(numFiftyNine, numSixty), load_avg);
+
+    /* multiply2 = (1/60) * ready_threads */   
+    multiply2 = mulFixedFixed(divFixedFixed(numOne, numSixty), ready_threads); 
+
+    /* load_avg = multiply1 + multiply2 -> (59/60) * load_avg + (1/60) * ready_threads */
+    load_avg = addFixedFixed(multiply1, multiply2);
+}
