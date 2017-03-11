@@ -4,6 +4,8 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+/********NEW CHANGE ******************************/
+#include "fixed-point.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -93,6 +95,13 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
+    /********NEW CHANGE ******************************/
+    /* Holds the nice fixed value of thread for MLFQ */
+    intToFixed(nice);
+    /********NEW CHANGE ******************************/
+    /* Holds the recent_cpu fixed value of thread for MLFQ */
+    intToFixed(recent_cpu);
+  
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
@@ -137,5 +146,12 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+
+/********NEW CHANGE ******************************/
+/* Added functions for MLFQ */
+void mlfqs_calc_priority (struct thread *t);
+void mlfqs_calc_cpu (struct thread *t);
+void mlfqs_calc_load_avg (void);
 
 #endif /* threads/thread.h */
