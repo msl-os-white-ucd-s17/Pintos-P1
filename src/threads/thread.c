@@ -198,7 +198,7 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
 
-  list_init(&donation); //List of priority donations
+  //list_init(&donation); //List of priority donations
 
   /* Add to run queue. */
   thread_unblock (t);
@@ -346,32 +346,31 @@ thread_set_priority (int new_priority)
     enum intr_level old_level = intr_disable ();
     struct thread *current_thread = thread_current();
     thread_current()->priority = new_priority;
+
     thread_preempt(); //Preempt if needed
     intr_set_level(old_level);
-}/*
- *  Added
- */
-int thread_donate_get_priority(struct thread *t) {
-    return t->priority;
 }
 /* ADDED
  *
  */
-int thread_donate_set_priority(struct thread *donee) {
-    enum intr_level old_level = intr_disable ();
-    int old_priority = thread_donate_get_priority(donee);
-    donee->priority = thread_current()->priority;
-    struct donor_elem de = {old_priority, {NULL, NULL}};
-    list_push_back(&donee->donation, &de.elem);
+void thread_donate_set_priority(struct thread *donee, struct lock *lock) {
+    //enum intr_level old_level = intr_disable ();
+    donee->effective_priority = thread_get_priority();
+    while (donee != NULL && donee->blocking_lock != NULL) {
+      donee = list_entry(list_front(donee->donors, donee->donor_elem), struct thread, elem);
+      donee->effective_priority = thread_get_priority();
+      list_push_back(donee->donors, thread_current()->donor_elem);
+    }
+    list_push_back(donee->donors, donee->donor_elem);
+
     thread_preempt(); //Preempt if needed
-    intr_set_level(old_level);
-    return old_priority;
+    //intr_set_level(old_level);
 }
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void)
 {
-  return thread_current ()->priority;
+  return thread_current ()->effective_priority;
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -617,7 +616,7 @@ allocate_tid (void)
 bool priority_compare (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED) {
   struct thread *t1 = list_entry(a, struct thread, elem);
   struct thread *t2 = list_entry(b, struct thread, elem);
-  return t1->priority > t2->priority;
+  return t1->effective_priority > t2->effective_priority;
 }
 
 /* ADDED
@@ -626,15 +625,9 @@ bool priority_compare (const struct list_elem *a, const struct list_elem *b, voi
 */
 void thread_preempt(void) {
     ASSERT (intr_get_level() == INTR_OFF);
-    if (!list_empty(&ready_list) && thread_get_priority() < list_entry(list_front(&ready_list), struct thread, elem)->priority) {
+    if (!list_empty(&ready_list) && thread_get_priority() < list_entry(list_front(&ready_list), struct thread, elem)->effective_priority) {
         thread_yield(); // Schedule higher priority thread to run
     }
-}
-/* ADDED
- * Current thread donates priority to thread of lesser priority
- */
-void priority_donate(struct thread *thread_donee) {
-    thread_donate_set_priority(donee);
 }
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */

@@ -197,8 +197,9 @@ lock_acquire (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
-  if (thread_get_priority() > lock->holder->priority) {
-      priority_donate(lock->holder);
+  if (thread_get_priority() > lock->holder->effective_priority) { // If current thread effective priority > blocked thread
+      thread_donate_set_priority(lock->holder);
+
   }
   else {
       sema_down(&lock->semaphore);
@@ -237,7 +238,6 @@ lock_release (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
   if (!list_empty(thread_current->donation)) {
-        int reset_priority = list_entry(list_pop_back(thread_current()->donation), struct donor_elem, elem)->priority; //This took me forever to figure out
         thread_set_priority(reset_priority);
   }
   lock->holder = NULL;
