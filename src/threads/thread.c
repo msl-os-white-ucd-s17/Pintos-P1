@@ -614,7 +614,7 @@ allocate_tid (void)
  * Compares the priorities of two threads
  * Returns true if t1_priority > t2_priority, false otherwise
  */
-list_less_func priority_compare (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED) {
+bool priority_compare (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED) {
   struct thread *t1 = list_entry(a, struct thread, elem);
   struct thread *t2 = list_entry(b, struct thread, elem);
   return t1->priority > t2->priority;
