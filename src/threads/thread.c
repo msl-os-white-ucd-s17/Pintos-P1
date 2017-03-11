@@ -346,25 +346,27 @@ thread_set_priority (int new_priority)
     enum intr_level old_level = intr_disable ();
     struct thread *current_thread = thread_current();
     thread_current()->priority = new_priority;
-
     thread_preempt(); //Preempt if needed
     intr_set_level(old_level);
 }
+
 /* ADDED
  *
  */
-void thread_donate_set_priority(struct thread *donee, struct lock *lock) {
-    //enum intr_level old_level = intr_disable ();
-    donee->effective_priority = thread_get_priority();
-    while (donee != NULL && donee->blocking_lock != NULL) {
-      donee = list_entry(list_front(donee->donors, donee->donor_elem), struct thread, elem);
-      donee->effective_priority = thread_get_priority();
-      list_push_back(donee->donors, thread_current()->donor_elem);
+void thread_donate_set_priority(struct thread *t_donee) {
+    enum intr_level old_level = intr_disable ();
+    t_donee->effective_priority = thread_get_priority();
+    for (e = list_begin(t_donee->donors); e != list_end(t_donee->donors); e = list_next (e)) {
+        struct thread *t = list_entry (e, struct thread, list_elem);
+        if (t->effective_priority < thread_get_priority()) {
+            thread_donate_set_priority(t);
+        }
+        else {
+            break;
+        }
     }
-    list_push_back(donee->donors, donee->donor_elem);
-
-    thread_preempt(); //Preempt if needed
-    //intr_set_level(old_level);
+    list_insert_ordered(t_donee->donors, thread_current()->donor_elem, priority_compare, NULL);
+    intr_set_level(old_level);
 }
 /* Returns the current thread's priority. */
 int
