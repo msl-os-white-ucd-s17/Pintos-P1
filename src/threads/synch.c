@@ -234,7 +234,7 @@ lock_try_acquire (struct lock *lock)
 
   success = sema_try_down (&lock->semaphore);
   if (success)
-    lock->holder = thread_current ();
+    lock->holder = thread_current();
   return success;
 }
 
@@ -252,7 +252,7 @@ lock_release (struct lock *lock)
   lock->holder = NULL;
   remove_lock(thread_current(), lock);
   thread_current()->effective_priority = thread_current()->priority;
-  refresh_priority (thread_current (), &thread_current ()->effective_priority);
+  update_priority(thread_current (), &thread_current ()->effective_priority);
   sema_up (&lock->semaphore);
   intr_set_level(old_level);
 }
@@ -339,8 +339,7 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED)
   ASSERT (lock_held_by_current_thread (lock));
 
   if (!list_empty (&cond->waiters)) 
-    sema_up (&list_entry (list_pop_front (&cond->waiters),
-                          struct semaphore_elem, elem)->semaphore);
+    sema_up (&list_entry (list_pop_front (&cond->waiters), struct semaphore_elem, elem)->semaphore);
 }
 
 /* Wakes up all threads, if any, waiting on COND (protected by

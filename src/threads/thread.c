@@ -351,29 +351,25 @@ thread_set_priority (int new_priority)
     thread_preempt(); //Preempt if needed
     intr_set_level(old_level);
 }
-void
-refresh_priority (struct thread *cur, int *e_priority)
+void update_priority(struct thread *current_thread, int *e_priority)
 {
     struct list_elem *e;
 
-    if (*e_priority <= cur->effective_priority)
-        *e_priority = cur->effective_priority;
+    if (*e_priority <= current_thread->effective_priority)
+        *e_priority = current_thread->effective_priority;
     else
         return;
-
-    for (e = list_begin (&cur->donors); e != list_end (&cur->donors);
-         e = list_next (e))
-    {
+    for (e = list_begin (&current_thread->donors); e != list_end (&current_thread->donors); e = list_next (e)) {
         struct thread *t = list_entry (e, struct thread, donor_elem);
-        refresh_priority (t, e_priority);
+        update_priority (t, e_priority);
     }
 }
 
-void donate_priority (struct thread *cur)
+void donate_priority (struct thread *current_thread)
 {
     struct thread *holder;
-    for (; cur->blocking_lock && (holder = cur->blocking_lock->holder); cur = holder)
-        refresh_priority (holder, &holder->effective_priority);
+    for (; current_thread->blocking_lock && (holder = current_thread->blocking_lock->holder); current_thread = holder)
+        update_priority(holder, &holder->effective_priority);
 }
 
 /* ADDED
@@ -395,12 +391,11 @@ void thread_donate_set_priority(struct thread *t_donee) {
 }
 
 */
-void
-remove_lock (struct thread *cur, struct lock *lock)
+void remove_lock (struct thread *currrent_thread, struct lock *lock)
 {
     struct list_elem *e;
 
-    for (e = list_begin (&cur->donors); e != list_end (&cur->donors); ) {
+    for (e = list_begin(&current_thread->donors); e != list_end(&current_thread->donors); ) {
         struct thread *t = list_entry (e, struct thread, donor_elem);
         remove_lock (t, lock);
         if (t->blocking_lock == lock)

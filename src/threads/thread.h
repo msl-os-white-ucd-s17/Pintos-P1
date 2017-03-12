@@ -148,8 +148,8 @@ bool priority_compare (const struct list_elem *a, const struct list_elem *b, voi
 //int thread_donate_get_priority(struct thread *t);
 void thread_preempt(void);
 
-void refresh_priority (struct thread *cur, int *e_priority);
-void donate_priority (struct thread *cur);
-void remove_lock (struct thread *cur, struct lock *lock);
+void update_priority (struct thread *current_thread, int *e_priority);
+void donate_priority (struct thread *current_thread);
+void remove_lock (struct thread *current_thread, struct lock *lock);
 
 #endif /* threads/thread.h */
