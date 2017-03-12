@@ -144,8 +144,8 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 bool priority_compare (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
-void thread_donate_set_priority(struct thread *donee);
-int thread_donate_get_priority(struct thread *t);
+//void thread_donate_set_priority(struct thread *donee);
+//int thread_donate_get_priority(struct thread *t);
 void thread_preempt(void);
 
 void refresh_priority (struct thread *cur, int *e_priority);

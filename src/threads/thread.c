@@ -372,13 +372,14 @@ refresh_priority (struct thread *cur, int *e_priority)
 void donate_priority (struct thread *cur)
 {
     struct thread *holder;
-    for (; cur->wait_on_lock && (holder = cur->wait_on_lock->holder); cur = holder)
+    for (; cur->blocking_lock && (holder = cur->blocking_lock->holder); cur = holder)
         refresh_priority (holder, &holder->effective_priority);
 }
 
 /* ADDED
  *
  */
+/*
 void thread_donate_set_priority(struct thread *t_donee) {
     t_donee->effective_priority = thread_get_priority();
     for (struct list_elem *e = list_begin(&t_donee->donors); e != list_end(&t_donee->donors); e = list_next (e)) {
@@ -393,7 +394,7 @@ void thread_donate_set_priority(struct thread *t_donee) {
     list_insert_ordered(&t_donee->donors, &thread_current()->donor_elem, priority_compare, NULL);
 }
 
-
+*/
 void
 remove_lock (struct thread *cur, struct lock *lock)
 {
