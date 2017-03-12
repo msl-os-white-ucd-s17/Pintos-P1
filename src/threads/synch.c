@@ -211,8 +211,8 @@ lock_acquire (struct lock *lock)
   //thread_donate_set_priority(lock->holder);
   t->blocking_lock = lock;
   list_push_back (&lock->holder->donors, &t->donor_elem);
-
-  sema_down(&lock->semaphore);
+  donate_priority(t);
+  sema_down(&lock->semaphore); // Block
   thread_current()->blocking_lock = NULL;
   lock->holder = thread_current();
   intr_set_level(old_level);
