@@ -115,12 +115,14 @@ sema_up (struct semaphore *sema)
   enum intr_level old_level;
 
   ASSERT (sema != NULL);
-
+  struct thread *next_thread = NULL;
   old_level = intr_disable ();
-  if (!list_empty (&sema->waiters))
-    list_sort(&sema->waiters, priority_compare, NULL);
-    thread_unblock (list_entry (list_pop_front (&sema->waiters), struct thread, elem));
+  if (!list_empty (&sema->waiters)) {
+      list_sort (&sema->waiters, priority_compare, NULL);
+      thread_unblock(list_entry(list_pop_front(&sema->waiters), struct thread, elem));
+  }
   sema->value++;
+  thread_preempt();
   intr_set_level (old_level);
 }
 
@@ -199,11 +201,21 @@ lock_acquire (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
-  if (lock->holder != NULL && thread_get_priority() > lock->holder->effective_priority) { // If current thread effective priority > blocked thread
-      thread_donate_set_priority(lock->holder);
+  struct thread *t = thread_current();
+  enum intr_level old_level = intr_disable();
+  if (lock_try_acquire (lock)) {
+    intr_set_level(old_level);
+    return;
   }
+
+  //thread_donate_set_priority(lock->holder);
+  t->blocking_lock = lock;
+  list_push_back (&lock->holder->donors, &t->donor_elem);
+
   sema_down(&lock->semaphore);
+  thread_current()->blocking_lock = NULL;
   lock->holder = thread_current();
+  intr_set_level(old_level);
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -236,9 +248,13 @@ lock_release (struct lock *lock)
 {
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
-  thread_current()->effective_priority = thread_current()->priority;
+  enum intr_level old_level = intr_disable();
   lock->holder = NULL;
+  remove_lock(thread_current(), lock);
+  thread_current()->effective_priority = thread_current()->priority;
+  refresh_priority (thread_current (), &thread_current ()->effective_priority);
   sema_up (&lock->semaphore);
+  intr_set_level(old_level);
 }
 
 /* Returns true if the current thread holds LOCK, false

@@ -89,6 +89,7 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Original Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
+
     struct lock *blocking_lock;
     struct list donors;
     struct list_elem donor_elem;
@@ -146,5 +147,9 @@ bool priority_compare (const struct list_elem *a, const struct list_elem *b, voi
 void thread_donate_set_priority(struct thread *donee);
 int thread_donate_get_priority(struct thread *t);
 void thread_preempt(void);
+
+void refresh_priority (struct thread *cur, int *e_priority);
+void donate_priority (struct thread *cur);
+void remove_lock (struct thread *cur, struct lock *lock);
 
 #endif /* threads/thread.h */

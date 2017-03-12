@@ -203,6 +203,8 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
 
+  thread_preempt();
+
   return tid;
 }
 
@@ -349,12 +351,35 @@ thread_set_priority (int new_priority)
     thread_preempt(); //Preempt if needed
     intr_set_level(old_level);
 }
+void
+refresh_priority (struct thread *cur, int *e_priority)
+{
+    struct list_elem *e;
+
+    if (*e_priority <= cur->effective_priority)
+        *e_priority = cur->effective_priority;
+    else
+        return;
+
+    for (e = list_begin (&cur->donors); e != list_end (&cur->donors);
+         e = list_next (e))
+    {
+        struct thread *t = list_entry (e, struct thread, donor_elem);
+        refresh_priority (t, e_priority);
+    }
+}
+
+void donate_priority (struct thread *cur)
+{
+    struct thread *holder;
+    for (; cur->wait_on_lock && (holder = cur->wait_on_lock->holder); cur = holder)
+        refresh_priority (holder, &holder->effective_priority);
+}
 
 /* ADDED
  *
  */
 void thread_donate_set_priority(struct thread *t_donee) {
-    enum intr_level old_level = intr_disable ();
     t_donee->effective_priority = thread_get_priority();
     for (struct list_elem *e = list_begin(&t_donee->donors); e != list_end(&t_donee->donors); e = list_next (e)) {
         struct thread *t = list_entry (e, struct thread, donor_elem);
@@ -366,8 +391,24 @@ void thread_donate_set_priority(struct thread *t_donee) {
         }
     }
     list_insert_ordered(&t_donee->donors, &thread_current()->donor_elem, priority_compare, NULL);
-    intr_set_level(old_level);
 }
+
+
+void
+remove_lock (struct thread *cur, struct lock *lock)
+{
+    struct list_elem *e;
+
+    for (e = list_begin (&cur->donors); e != list_end (&cur->donors); ) {
+        struct thread *t = list_entry (e, struct thread, donor_elem);
+        remove_lock (t, lock);
+        if (t->blocking_lock == lock)
+            e = list_remove (e);
+        else
+            e = list_next (e);
+    }
+}
+
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void)
@@ -492,6 +533,7 @@ init_thread (struct thread *t, const char *name, int priority)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
+  t->effective_priority = priority;
   t->magic = THREAD_MAGIC;
 
   old_level = intr_disable ();
@@ -625,10 +667,12 @@ bool priority_compare (const struct list_elem *a, const struct list_elem *b, voi
  * If true, do nothing. If false, preempt current thread.
 */
 void thread_preempt(void) {
-    ASSERT (intr_get_level() == INTR_OFF);
+    enum intr_level old_level = intr_disable();
     if (!list_empty(&ready_list) && thread_get_priority() < list_entry(list_front(&ready_list), struct thread, elem)->effective_priority) {
+        intr_set_level(old_level);
         thread_yield(); // Schedule higher priority thread to run
     }
+    intr_set_level(old_level);
 }
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
