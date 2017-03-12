@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+/* Used the table found out the site below as a resource for the following functions */
+/* https://jeason.gitbooks.io/pintos-reference-guide-sysu/content/Advanced%20Scheduler.html */
+
 #define F 17
 
 #define fixedToInt_RoundNearest(x)(x >= ? ((x + (1 << (F - 1))) >> F) \
