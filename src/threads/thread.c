@@ -390,7 +390,7 @@ update_priority (struct thread *t)
   if (!list_empty (&t->donors))
     {
      
-      list_sort (&t->held_lock, priority_lock_compare, NULL);
+      list_sort (&t->held_locks, priority_lock_compare, NULL);
       lock_priority = list_entry (list_front (&t->held_locks),
                                   struct lock, elem)->high_priority;
      
