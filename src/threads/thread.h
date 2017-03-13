@@ -171,5 +171,6 @@ int thread_get_load_avg (void);
 void mlfqs_calc_priority (struct thread *t);
 void mlfqs_calc_cpu (struct thread *t);
 void mlfqs_calc_load_avg (void);
+void mlfqs_increment (void);
 
 #endif /* threads/thread.h */
