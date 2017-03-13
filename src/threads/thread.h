@@ -95,12 +95,12 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
-    /********NEW CHANGE ******************************/
+    /********NEW CHANGE! ******************************/
     /* Holds the nice fixed value of thread for MLFQ */
-    intToFixed(nice);
-    /********NEW CHANGE ******************************/
+    int nice;
+    /********NEW CHANGE! ******************************/
     /* Holds the recent_cpu fixed value of thread for MLFQ */
-    intToFixed(recent_cpu);
+    int recent_cpu;
   
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
