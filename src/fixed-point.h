@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define F 17
+#define F 16
 
 #define fixedToInt_RoundNearest(x)(x >= ? ((x + (1 << (F - 1))) >> F) \
 										: ((x - (1 << (F - 1))) >> F))
