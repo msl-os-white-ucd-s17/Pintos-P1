@@ -62,9 +62,9 @@ static unsigned thread_ticks;   /* # of timer ticks since last yield. */
    Controlled by kernel command-line option "-o mlfqs". */
 bool thread_mlfqs;
 
-/********NEW CHANGE ******************************/
-/* Fixed Integer to hold system load average */
-intToFixed (load_avg);
+/********NEW CHANGE! ******************************/
+/* Integer to hold system load average */
+int load_avg;
 
 static void kernel_thread (thread_func *, void *aux);
 
@@ -117,13 +117,15 @@ thread_start (void)
   sema_init (&idle_started, 0);
   thread_create ("idle", PRI_MIN, idle, &idle_started);
 
-  /********NEW CHANGE ******************************/
+  /* *******NEW CHANGE ***************************** */
   /* At thread start, load average is initialized to 0 */
   load_avg = intToFixed(0);
 
-  /********NEW CHANGE ******************************/
-  /* At thread start, load average is initialized to 0 */
-  recent_cpu = intToFixed(0);
+  
+// /********NEW CHANGE! ******************************/
+//  /* At thread start, load average is initialized to 0 */
+//  recent_cpu = intToFixed(0);
+ 
    
   /* Start preemptive thread scheduling. */
   intr_enable ();
@@ -393,7 +395,7 @@ int
 thread_get_recent_cpu (void) 
 {
   int valHundred = intToFixed(100);
-  return mulFixedFixed(recent_cpu, valHundred);
+  return mulFixedFixed(thread_current ()->recent_cpu, valHundred);
 }
 
 
@@ -620,29 +622,41 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
  * timer_ticks () % TIMER_FREQ == 0
 
  * Calculating load_avg updated every second when
- * timer_ticks () % TIMER_FREQ == 0
+ * timer_ticks () % TIMER_FREQ == 0			*/
 
-/********NEW CHANGE ******************************/
-/* Calculates the thread's priority based on new nice 
-priority = PRI_MAX - (recent_cpu / 4) - (nice * 2) */
+/* ******NEW CHANGE! ******************************** */
+/* Calculates the thread's priority based on new nice */
+/* priority = PRI_MAX - (recent_cpu / 4) - (nice * 2) */
+
 void mlfqs_calc_priority (struct thread *t)
 {
-    if (t != idle_thread)   // Make sure thread is running
-    {
-      int divder;
-      int dividerMINUSnice
-      int niceValue;
-      intToFixed(PRI_MAX);
+   // ASSERT (t != NULL)   // Make sure thread is running
+	/*
+	int divider = intToFixed(divider);
+	int dividerMINUSnice = intToFixed(dividerMINUSnice);
+	int niceValue = intToFixed(t->nice);
+	int multiply = intToFixed(multiply);
+	*/
 
-        niceValue = intToFixed(t->nice);
+	int divider;
+	int dividerMINUSnice;
+	int niceValue = t->nice;
+	int multiply;
+
         multiply = mulFixedInt(niceValue, 2);
         divider = divFixedInt(t->recent_cpu, 4);
-        dividerMINUSnice = subFixedFixed(divFixedInt, multiply);
-        t->priority = subFixedFixed(PRI_MAX, dividerMINUSnice);
-    }
+        dividerMINUSnice = subFixedFixed(divider, multiply);
+        t->priority = subFixedInt(dividerMINUSnice, PRI_MAX);
 
-    else 
-      return;
+
+	/* Set thread's new calculated priority so it is within range from PRI_MIN to PRI_MAX */
+	/* If calculated priority is smaller than PRI_MIN automatically set to PRI_MIN */
+	if(t->priority < PRI_MIN)
+		t->priority = PRI_MIN;
+	/* If calculated priority is bigger than PRI_MAX automatically set to PRI_MAX */
+	if(t->priority > PRI_MAX)
+		t->priority = PRI_MAX;
+
     /* CLEAN UP/COMMENT*/
 }
 
@@ -651,12 +665,12 @@ void mlfqs_calc_priority (struct thread *t)
 recent_cpu = (2 * load_avg) / (2 * load_avg + 1) * recent_cpu + nice */
 void mlfqs_calc_cpu (struct thread *t)
 {
-  int numTwo = intToFixed(2);             // Fixed point number 2
-  int numOne = intToFixed(1);             // Fixed point number 1
-    intToFixed(divided);                    // Fixed point to hold divided value
-    intToFixed(divider);                    // Fixed point to hold divider value
-    intToFixed(addedVal);                   // Fixed point to hold added value
-    intToFixed(multiplyVal);                // Fixed point to hold multiplied value
+  int numTwo = intToFixed(2);             	// Fixed point number 2
+  int numOne = intToFixed(1);             	// Fixed point number 1
+    int divided;    	// Fixed point to hold divided value
+    int divider;    	// Fixed point to hold divider value
+    int addedVal;  	// Fixed point to hold added value
+    int multiplyVal;	// Fixed point to hold multiplied value
 
       /* divided = (2 * load_avg) */
       divided = mulFixedFixed(numTwo, load_avg);
@@ -675,25 +689,27 @@ void mlfqs_calc_cpu (struct thread *t)
 
 }
 
-/********NEW CHANGE ******************************/
+/********NEW CHANGE! ******************************/
 /* Calculate load_avg using number of ready_threads and current load_avg 
     load_avg = (59/60) * load_avg + (1/60) * ready_threads */
 void mlfqs_calc_load_avg (void)
 {
-    int numOne = intToFixed(1);           // Fixed point number 1
-    int numSixty = intToFixed(60);        // Fixed point number 60
-    int numFiftyNine = intToFixed(59);    // Fixed point number 59
-      intToFixed(multiply1);                // Fixed point to hold first multiplication value
-      intToFixed(multiply2);                // Fixed point to hold second multiplication value
+    int numOne = intToFixed(1);           	// Fixed point number 1
+    int numSixty = intToFixed(60);        	// Fixed point number 60
+    int numFiftyNine = intToFixed(59);    	// Fixed point number 59
+	// Fixed point to hold first multiplication value
+    	int multiply1;
+	// Fixed point to hold second multiplication value
+     	int multiply2;                
 
     /* Use list_size from list.c to find number of ready threads */
-    int ready_threads = intToFixed(list_size(&ready_list)); 
+    int ready_threads = list_size(&ready_list); 
 
     /* multiply1 = (59/60) * loadAvg */    
     multiply1 = mulFixedFixed(divFixedFixed(numFiftyNine, numSixty), load_avg);
 
     /* multiply2 = (1/60) * ready_threads */   
-    multiply2 = mulFixedFixed(divFixedFixed(numOne, numSixty), ready_threads); 
+    multiply2 = mulFixedInt(divFixedFixed(numOne, numSixty), ready_threads); 
 
     /* load_avg = multiply1 + multiply2 -> (59/60) * load_avg + (1/60) * ready_threads */
     load_avg = addFixedFixed(multiply1, multiply2);
