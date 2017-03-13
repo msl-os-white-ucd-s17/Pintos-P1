@@ -8,9 +8,8 @@
             |   DESIGN DOCUMENT  |
 
             +--------------------+
-
-                   
-
+   
+   
 ## Team White
 
 Stefani Moore <stefani.moore@ucdenver.edu>
@@ -21,36 +20,65 @@ Lena Banks <lena.banks@ucdenver.edu>
 
 Sara Kim <sara.kim@ucdenver.edu>
 
+## Tests Passed
+
+20 of 27 tests passed
 
 ### ALARM CLOCK
 
-> #### NOTES & TO-DO
-> * Add wakeup time to TCB in `threads\thread.h` to indicate that the thread is blocked & should not be scheduled.
-> * Modify `void timer_sleep(int64_t ticks)` to remove calling thread from ready list, insert in sorted sleeping list. 
-> * Add `void wake_them_up()` to traverse sleeping thread list & wake up (unblock) appropriate threads. Implementation must be fast & minimal! Sorted sleeping thread list is important here!
-> * Modify `void thread_tick(void)` to call `void wake_them_up()`
-
-
 #### DATA STRUCTURES
-
 
 A1: Copy here the declaration of each new or changed struct or struct member, global or static variable, typedef, or enumeration. Identify the purpose of each in 25 words or less.
 
+In thread.h:   
+  sleepTickCount : int64_t
+  - In thread struct, holds thread tick count used to determine when a thread
+    is ready to be unblocked.
+
+In timer.c:  
+  sleep_list : static struct list
+  - A list of sleeping or blocked threads that are added in timer_sleep() 
+    and removed in timer_interrupt()
 
 #### ALGORITHMS
 
 
 A2: Briefly describe what happens in a call to timer_sleep(), including the effects of the timer interrupt handler.
 
+The timer_sleep() function begins by checking that the tick count is >= 0
+because if the ticks are 0 or below then there is no need to continue on.
+Our tick argument, sleepTickCount, is then calculated by adding the global
+ticks to this argument. The current thread is then placed into the 
+sleep_list sleeping thread queue, which is sorted by tick count with thread
+to be woken up next at the front. This thread is then blocked. The interrupts
+are disabled for this process so that the ticks may be reliably calculated and
+the thread can be blocked.  In the timer_interrupt function, the threads 
+member sleepTickCount is check against the amount of ticks that have passed
+since the member was initialized.
+
 A3: What steps are taken to minimize the amount of time spent in the timer interrupt handler?
 
+Keeping the list sorted helps to minimize the amount of time spent in the
+timer interrupt handler. Also, within the while loop if the front thread
+of the sleep_list's tick count does not need to be woken up yet, then the 
+the while loop is broken. If it does need to be woken up, the next thread
+in the sleeping list will be checked. Therefore, the handler does not have to 
+iterate through the entire sleep list at every interrupt. 
 
 #### SYNCHRONIZATION
 
 A4: How are race conditions avoided when multiple threads call timer_sleep() simultaneously?
 
+Race conditions are avoided when multiple threads are called by disabline the interrupts.
+These are disabled in timer sleep and this results in only one thread being in the function
+at a time so that no other thread can take the current thread off of the CPU.
+
 A5: How are race conditions avoided when a timer interrupt occurs during a call to timer_sleep()?
 
+Race conditions are avoided when a timer interrupt occurs during a call to timer_sleep in the
+same way as mentioned above. The interrupts are disabled so that there is no way for
+a timer interrrupt to occur until the end of the function when the interrupts are
+re-enabled.
 
 #### RATIONALE
 
