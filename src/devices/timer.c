@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <round.h>
 #include <stdio.h>
+#include <kernel/list.h>
 #include "devices/pit.h"
 #include "threads/interrupt.h"
 #include "threads/synch.h"
@@ -16,6 +17,11 @@
 #if TIMER_FREQ > 1000
 #error TIMER_FREQ <= 1000 recommended
 #endif
+
+/* Wait list for timer_sleep()
+ * Elements are sorted in ascending order according to ticks
+ **/
+struct list sleep_list;
 
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
@@ -37,6 +43,7 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
+  list_init (&sleep_list);
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -89,11 +96,25 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-  int64_t start = timer_ticks ();
+		// If ticks are 0 or negative no need to continue
+	  if (ticks <= 0)
+    return;
 
-  ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+  struct thread *cur_thread;	// Calling thread
+  enum intr_level old_level;	// Interrupts ON or OFF?
+
+  ASSERT (intr_get_level () == INTR_ON);	// Do not proceed if interrupts are already OFF
+
+  old_level = intr_disable ();	// Disable interrupts so that ticks may be reliably calculated and thread can be blocked
+
+  cur_thread = thread_current ();	// Calling thread
+  cur_thread->sleepTickCount = timer_ticks () + ticks;
+
+  list_insert_ordered (&sleep_list, &cur_thread->elem,
+                       compare_ticks, NULL);
+  thread_block ();
+
+  intr_set_level (old_level);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -122,7 +143,6 @@ timer_nsleep (int64_t ns)
 
 /* Busy-waits for approximately MS milliseconds.  Interrupts need
    not be turned on.
-
    Busy waiting wastes CPU cycles, and busy waiting with
    interrupts off for the interval between timer ticks or longer
    will cause timer ticks to be lost.  Thus, use timer_msleep()
@@ -135,7 +155,6 @@ timer_mdelay (int64_t ms)
 
 /* Sleeps for approximately US microseconds.  Interrupts need not
    be turned on.
-
    Busy waiting wastes CPU cycles, and busy waiting with
    interrupts off for the interval between timer ticks or longer
    will cause timer ticks to be lost.  Thus, use timer_usleep()
@@ -148,7 +167,6 @@ timer_udelay (int64_t us)
 
 /* Sleeps execution for approximately NS nanoseconds.  Interrupts
    need not be turned on.
-
    Busy waiting wastes CPU cycles, and busy waiting with
    interrupts off for the interval between timer ticks or longer
    will cause timer ticks to be lost.  Thus, use timer_nsleep()
@@ -170,8 +188,27 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
+  struct list_elem *p_elem;	// Pointer to thread wake up time
+  struct thread *p_thread;	// Pointer to TCB
+  bool preempt = false;
+
   ticks++;
   thread_tick ();
+
+  while (!list_empty(&sleep_list))
+    {
+      p_elem = list_front (&sleep_list);	// Thread closest to wake up time
+      p_thread = list_entry (p_elem, struct thread, elem);	// Get TCB from sleep list element
+      if (p_thread->sleepTickCount > ticks)	// Terminate if sleepTickCount > ticks because all succeeding elements are guaranteed
+        {
+          break;
+        }
+      list_remove (p_elem);	// Remove from sleep list
+      thread_unblock (p_thread);	// Unblock play
+      preempt = true;
+    }
+  if (preempt)
+    intr_yield_on_return ();	// Schedule thread that have been woken up
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
@@ -195,7 +232,6 @@ too_many_loops (unsigned loops)
 
 /* Iterates through a simple loop LOOPS times, for implementing
    brief delays.
-
    Marked NO_INLINE because code alignment can significantly
    affect timings, so that if this function was inlined
    differently in different places the results would be difficult
@@ -243,4 +279,12 @@ real_time_delay (int64_t num, int32_t denom)
      the possibility of overflow. */
   ASSERT (denom % 1000 == 0);
   busy_wait (loops_per_tick * num / 1000 * TIMER_FREQ / (denom / 1000)); 
+}
+bool compare_ticks (const struct list_elem *a,
+                         const struct list_elem *b,
+                         void *aux UNUSED)
+{
+  struct thread *ta = list_entry (a, struct thread, elem);
+  struct thread *tb = list_entry (b, struct thread, elem);
+  return ta->sleepTickCount < tb->sleepTickCount;
 }
