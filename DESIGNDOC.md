@@ -85,6 +85,10 @@ re-enabled.
 
 A6: Why did you choose this design? In what ways is it superior to another design you considered?
 
+Initially it was considered to create a seperate wake sleeping thread method, 
+which also would have worked, but our current implementation is simpler. This
+design was chosen because it made the most sense when it comes down to minimizing
+the time spent in the timer interrupt handler.
 
 ### PRIORITY SCHEDULING
 
