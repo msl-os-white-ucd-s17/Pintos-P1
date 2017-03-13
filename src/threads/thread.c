@@ -349,7 +349,7 @@ thread_set_priority (int new_priority)
 
   current_thread->priority = new_priority;
 
-  if (last_priority > new_priority && list_empty (&current_thread->donors))
+  if (last_priority > new_priority && list_empty (&current_thread->held_locks))
     {
       current_thread->effective_priority = new_priority;
       thread_preempt ();
@@ -390,8 +390,8 @@ update_priority (struct thread *t)
   if (!list_empty (&t->donors))
     {
      
-      list_sort (&t->donors, priority_lock_compare, NULL);
-      lock_priority = list_entry (list_front (&t->donors),
+      list_sort (&t->held_locks, priority_lock_compare, NULL);
+      lock_priority = list_entry (list_front (&t->held_locks),
                                   struct lock, elem)->high_priority;
      
       if ( highPriority < lock_priority)
@@ -539,7 +539,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->effective_priority = priority;
-  list_init (&t->donors);
+  list_init (&t->held_locks);
   t->blocking_lock = NULL;
   t->nice = 0;
   //t->recent_cpu = __toFixed (0);
