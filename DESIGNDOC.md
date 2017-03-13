@@ -97,36 +97,39 @@ the time spent in the timer interrupt handler.
 
 
 B1: Copy here the declaration of each new or changed struct or struct member, global or static variable, typedef, or enumeration. Identify the purpose of each in 25 words or less.
-> A macro `#define NESTED_MAX_DEPTH 9` was declared as a cutoff for the depth level of nested priority donation.
-> A variable `int effective_priority` was added to hold the donated priority for threads.
-> A structure `struct list donors` that functions as a linked-list was defined to enable access to a thread's held locks.
-> A variable `struct lock *blocking_lock` was added to indicate which lock a thread is waiting on. It also functions as a conditional variable for the loop in `void lock_acquire (struct lock *lock)`.
-> A struct member `struct list_elem elem` was added to `struct lock` to obtain the actual lock structure held by a `struct list_elem` in `struct list donors`.
-> A struct member `int high_priority` was added to `struct lock` to indicate the highest donated priority of the thread currently holding the lock.
+> * A macro `#define NESTED_MAX_DEPTH 9` was declared as a cutoff for the depth level of nested priority donation.
+> * A variable `int effective_priority` was added to hold the donated priority for threads.
+> * A structure `struct list donors` that functions as a linked-list was defined to enable access to a thread's held locks.
+> * A variable `struct lock *blocking_lock` was added to indicate which lock a thread is waiting on.
+> * A struct member `struct list_elem elem` was added to `struct lock` to obtain the actual lock structure held by a `struct list_elem` in `struct list held_locks`.
+> * A struct member `int high_priority` was added to `struct lock` to indicate the highest donated priority of the thread currently holding the lock.
 
 B2: Explain the data structure used to track priority donation.
-
+> All of the aforementioned declarations work together to keep track of priority donation. Our implementation does not utilize a linked-list of donors and donees; instead drawing its power from preconditions and postconditions established early-on and conditonally updated throughout a thread's lifecycle until termination.
 
 #### ALGORITHMS
 
 
 B3: How do you ensure that the highest priority thread waiting for a lock, semaphore, or condition variable wakes up first?
-> Given that 
+> The highest priority thread will be woken up by `void sema_up(struct semaphore *sema)` when it is called by `void
+lock_release (struct lock *lock)` because the first thread in the list of threads waiting for a lock is the one with the highest priority. This behavior is guaranteed because `struct list waiters` in `struct semaphore` is sorted before the highest priority thread is popped from the front of the list and unblocked. This ensures correct scheduling behavior for threads waiting on locks and sempahores in cases where priorities were modified via donation or directly by a component other than the scheduler. It is worth noting that threads are inserted in the correct place following any call to `void sema_down (struct semaphore *sema)` such that the thread blocks on the resource. However, this is insignificant if the priority of any thread in the wait list is modified *post-hoc* to its insertion.
 
-B4: Describe the sequence of events when a call to lock_acquire() causes a priority donation.  How is nested donation handled?
-> 
+B4: Describe the sequence of events when a call to lock_acquire() causes a priority donation. How is nested donation handled?
+> The donor (current thread) traverses through locks and lock holders; donating its priority to all lock holders with an `int effective_priority` less than that of its own. The traversal terminates when it finds a holder with a greater priority than its own or a holder that is not blocking on a lock.
 
 B5: Describe the sequence of events when lock_release() is called on a lock that a higher-priority thread is waiting for.
-> The highest priority thread will be woken up by `void sema_up(struct semaphore *sema)` because the first thread in the semaphore wait list is the one with the highest priority.
+> See above (B3).
+
 
 #### SYNCHRONIZATION
 
 B6: Describe a potential race in thread_set_priority() and explain how your implementation avoids it.  Can you use a lock to avoid this race?
-
+> The previous implementation of `thread_set_priority()` did not disable interrupts; allowing the currently executing thread to be preempted. If the thread responsible for the preemption were to get the priority of the interrupted thread and set it based on some condition, then two completely different results could arise given the scenario in which it was interrupted before it was able to finish the critical section versus the scenario in which it did finish before interruption.
 
 #### RATIONALE
 
 B7: Why did you choose this design?  In what ways is it superior to another design you considered?
+
 
 
 ### ADVANCED SCHEDULER
