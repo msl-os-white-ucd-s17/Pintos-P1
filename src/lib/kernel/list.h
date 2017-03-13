@@ -93,6 +93,7 @@ struct list_elem
     struct list_elem *next;     /* Next list element. */
   };
 
+
 /* List. */
 struct list 
   {
