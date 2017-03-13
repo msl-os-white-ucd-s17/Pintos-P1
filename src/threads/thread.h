@@ -94,11 +94,9 @@ struct thread
 
 
 		/* Priority Scheduler Items */
-		int effective_priority;             /* Effective priority for priority donation */
-    struct list donors;                 /* Locks held for priority donation. */
+    int effective_priority;             /* Effective priority for priority donation */
+    struct list held_locks;             /* Locks held for priority donation. */
     struct lock *blocking_lock;         /* Lock waiting on for priority donation. */
-		//struct list_elem donor_elem;
-
 		/* mlfqs items */
     int nice;                           /* Niceness for 4.4BSD scheduler. */
     int recent_cpu;                		  /* Recent CPU for 4.4BSD scheduler. */

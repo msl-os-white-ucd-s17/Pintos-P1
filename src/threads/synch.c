@@ -202,6 +202,7 @@ lock_acquire (struct lock *lock)
 
       while (_lock && _lock->high_priority < current_thread->effective_priority && nested_depth++ < NESTED_MAX_DEPTH)
         {
+
           _lock->high_priority = current_thread->effective_priority;
           donate_priority (_lock->holder);
           _lock = _lock->holder->blocking_lock;
@@ -392,7 +393,7 @@ void
 add_lock (struct lock *lock)
 {
   enum intr_level old_level = intr_disable ();
-  list_insert_ordered (&thread_current ()->donors, &lock->elem,
+  list_insert_ordered (&thread_current ()->held_locks, &lock->elem,
                        priority_compare, NULL);
 
   if (thread_current ()->effective_priority < lock->high_priority)
