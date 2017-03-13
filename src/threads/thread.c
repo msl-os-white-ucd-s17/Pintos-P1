@@ -690,15 +690,13 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 /* Still need to implement recalculation of new priority of 
  * thread from mlfqs_calc_priority, set priority again
 
- * Recent cpu for runnning thread increment by 1 for each interrupt
-
  * Recalculation of recent cpu made when 
  * timer_ticks () % TIMER_FREQ == 0
 
  * Calculating load_avg updated every second when
  * timer_ticks () % TIMER_FREQ == 0 */
 
-/********NEW CHANGE ******************************/
+/********NEW CHANGE! ******************************/
 /* Calculates the thread's priority based on new nice 
 priority = PRI_MAX - (recent_cpu / 4) - (nice * 2) */
 void mlfqs_calc_priority (struct thread *t)
@@ -706,13 +704,15 @@ void mlfqs_calc_priority (struct thread *t)
 //    if (t != idle_thread)   // Make sure thread is running
 //    {
   int multiply;
+      int num2 = intToFixed(2);
+      int num4 = intToFixed(4);
       int divider;
       int dividerMINUSnice;
       int niceValue = t->nice;
       intToFixed(PRI_MAX);
 
-        multiply = mulFixedInt(niceValue, 2);
-        divider = divFixedInt(t->recent_cpu, 4);
+        multiply = mulFixedInt(num2, niceValue);
+        divider = divFixedInt(t->recent_cpu, num4);
         dividerMINUSnice = subFixedFixed(divider, multiply);
         t->priority = subFixedInt(dividerMINUSnice, PRI_MAX);
 
@@ -781,4 +781,11 @@ void mlfqs_calc_load_avg (void)
 
     /* load_avg = multiply1 + multiply2 -> (59/60) * load_avg + (1/60) * ready_threads */
     load_avg = addFixedFixed(multiply1, multiply2);
+}
+
+/********NEW CHANGE! ******************************/
+/* Recent cpu for runnning thread increment by 1 for each interrupt */
+void mlfqs_increment (void)
+{
+  thread_current()-> recent_cpu = addFixedInt(thread_current()->recent_cpu, 1);
 }
