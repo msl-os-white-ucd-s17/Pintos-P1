@@ -11,9 +11,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
-/********NEW CHANGE ******************************/
-/* fixed-point needed for MLFQs calculation */
-#include "threads/fixed-point.h"
+#include "threads/fixed_point.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -62,8 +60,6 @@ static unsigned thread_ticks;   /* # of timer ticks since last yield. */
    Controlled by kernel command-line option "-o mlfqs". */
 bool thread_mlfqs;
 
-/********NEW CHANGE! ******************************/
-/* Integer to hold system load average */
 int load_avg;
 
 static void kernel_thread (thread_func *, void *aux);
@@ -82,13 +78,10 @@ static tid_t allocate_tid (void);
    that's currently running into a thread.  This can't work in
    general and it is possible in this case only because loader.S
    was careful to put the bottom of the stack at a page boundary.
-
    Also initializes the run queue and the tid lock.
-
    After calling this function, be sure to initialize the page
    allocator before trying to create any threads with
    thread_create().
-
    It is not safe to call thread_current() until this function
    finishes. */
 void
@@ -121,12 +114,12 @@ thread_start (void)
   /* At thread start, load average is initialized to 0 */
   load_avg = intToFixed(0);
 
-  
+
 // /********NEW CHANGE! ******************************/
 //  /* At thread start, load average is initialized to 0 */
 //  recent_cpu = intToFixed(0);
- 
-   
+
+
   /* Start preemptive thread scheduling. */
   intr_enable ();
 
@@ -168,14 +161,12 @@ thread_print_stats (void)
    PRIORITY, which executes FUNCTION passing AUX as the argument,
    and adds it to the ready queue.  Returns the thread identifier
    for the new thread, or TID_ERROR if creation fails.
-
    If thread_start() has been called, then the new thread may be
    scheduled before thread_create() returns.  It could even exit
    before thread_create() returns.  Contrariwise, the original
    thread may run for any amount of time before the new thread is
    scheduled.  Use a semaphore or some other form of
    synchronization if you need to ensure ordering.
-
    The code provided sets the new thread's `priority' member to
    PRIORITY, but no actual priority scheduling is implemented.
    Priority scheduling is the goal of Problem 1-3. */
@@ -218,12 +209,13 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
 
+  thread_preempt ();
+
   return tid;
 }
 
 /* Puts the current thread to sleep.  It will not be scheduled
    again until awoken by thread_unblock().
-
    This function must be called with interrupts turned off.  It
    is usually a better idea to use one of the synchronization
    primitives in synch.h. */
@@ -240,7 +232,6 @@ thread_block (void)
 /* Transitions a blocked thread T to the ready-to-run state.
    This is an error if T is not blocked.  (Use thread_yield() to
    make the running thread ready.)
-
    This function does not preempt the running thread.  This can
    be important: if the caller had disabled interrupts itself,
    it may expect that it can atomically unblock a thread and
@@ -254,7 +245,9 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  /* Add thread to the ready list */
+  list_insert_ordered (&ready_list, &t->elem,priority_compare, NULL);
+
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -325,7 +318,9 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) 
-    list_push_back (&ready_list, &cur->elem);
+    /* add the thread to the ready list */
+    list_insert_ordered (&ready_list, &cur->elem, priority_compare, NULL);
+  /* Change Thread status */
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -348,31 +343,103 @@ thread_foreach (thread_action_func *func, void *aux)
     }
 }
 
-/* Sets the current thread's priority to NEW_PRIORITY. */
-void
+/* Sets the current thread's priority to NEW_PRIORITY.
+   If the priority is donated by another thread, it may
+   not change immediately. */
+void //Chnaged
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
+
+  if (thread_mlfqs)
+    return;
+
+  enum intr_level old_level = intr_disable ();
+  struct thread *current_thread = thread_current ();
+  int last_priority = current_thread->effective_priority;
+
+  current_thread->priority = new_priority;
+
+  if (last_priority > new_priority && list_empty (&current_thread->donors))
+    {
+      current_thread->effective_priority = new_priority;
+      thread_preempt ();
+    }
+
+  intr_set_level (old_level);
 }
 
-/* Returns the current thread's priority. */
+
 int
 thread_get_priority (void) 
 {
-  return thread_current ()->priority;
+  return thread_current ()->effective_priority;
 }
 
 /********NEW CHANGE ******************************/
 /* Sets the current thread's nice value to NICE. */
 void
 thread_set_nice (int nice UNUSED) 
+
+void
+donate_priority (struct thread *t)
 {
   thread_current () ->nice = nice;
   mlfqs_calc_priority(thread_current() );
+  enum intr_level old_level = intr_disable ();
+  update_priority (t);
+
+  if (t->status == THREAD_READY)
+    {
+      list_remove (&t->elem);
+      list_insert_ordered (&ready_list, &t->elem, priority_compare, NULL);
+    }
+  intr_set_level (old_level);
 }
 
 /********NEW CHANGE ******************************/
 /* Returns the current thread's nice value. */
+void
+update_priority (struct thread *t)
+{
+  enum intr_level old_level = intr_disable ();
+  int highPriority = t->priority;
+  int lock_priority;
+
+  if (!list_empty (&t->donors))
+    {
+
+      list_sort (&t->donors, priority_lock_compare, NULL);
+      lock_priority = list_entry (list_front (&t->donors),
+                                  struct lock, elem)->high_priority;
+
+      if ( highPriority < lock_priority)
+       highPriority = lock_priority;
+    }
+
+  t->effective_priority = highPriority;
+  intr_set_level (old_level);
+}
+
+/* Test if current thread should be preempted. */
+void
+thread_preempt (void)
+{
+  enum intr_level old_level = intr_disable ();
+
+  if (!list_empty (&ready_list) && thread_current ()->effective_priority <
+      list_entry (list_front (&ready_list), struct thread, elem)->effective_priority)
+      	thread_yield ();
+  intr_set_level (old_level);
+}
+
+
+void
+thread_set_nice (int nice)
+{
+
+}
+
+
 int
 thread_get_nice (void) 
 {
@@ -396,6 +463,18 @@ thread_get_recent_cpu (void)
 {
   int valHundred = intToFixed(100);
   return mulFixedFixed(thread_current ()->recent_cpu, valHundred);
+}
+
+/* ADDED
+ * Compares the priorities of two threads
+ */
+bool priority_compare (const struct list_elem *a,
+                      const struct list_elem *b,
+                      void *aux UNUSED)
+{
+  struct thread *t1 = list_entry (a, struct thread, elem);
+  struct thread *t2 = list_entry (b, struct thread, elem);
+  return t1->effective_priority > t2->effective_priority;
 }
 
 
@@ -422,7 +501,6 @@ idle (void *idle_started_ UNUSED)
       thread_block ();
 
       /* Re-enable interrupts and wait for the next one.
-
          The `sti' instruction disables interrupts until the
          completion of the next instruction, so these two
          instructions are executed atomically.  This atomicity is
@@ -430,7 +508,6 @@ idle (void *idle_started_ UNUSED)
          between re-enabling interrupts and waiting for the next
          one to occur, wasting as much as one clock tick worth of
          time.
-
          See [IA32-v2a] "HLT", [IA32-v2b] "STI", and [IA32-v3a]
          7.11.1 "HLT Instruction". */
       asm volatile ("sti; hlt" : : : "memory");
@@ -485,13 +562,18 @@ init_thread (struct thread *t, const char *name, int priority)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
+  t->effective_priority = priority;
+  list_init (&t->donors);
+  t->blocking_lock = NULL;
+  t->nice = 0;
+  //t->recent_cpu = __toFixed (0);
   t->magic = THREAD_MAGIC;
 
   /********NEW CHANGE ******************************/
   /* Added initialize MLFQ values to 0 */
   t->nice = intToFixed(0);
   t->recent_cpu = intToFixed(0);
-   
+
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
@@ -533,11 +615,9 @@ next_thread_to_run (void)
    thread_schedule() as its final action before returning, but
    the first time a thread is scheduled it is called by
    switch_entry() (see switch.S).
-
    It's not safe to call printf() until the thread switch is
    complete.  In practice that means that printf()s should be
    added at the end of the function.
-
    After this function and its caller returns, the thread switch
    is complete. */
 void
@@ -613,12 +693,12 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
 
 /************************IN PROGRESS************************/
-/* Still need to implement recalculation of new priority of 
+/* Still need to implement recalculation of new priority of
  * thread from mlfqs_calc_priority, set priority again
 
  * Recent cpu for runnning thread increment by 1 for each interrupt
 
- * Recalculation of recent cpu made when 
+ * Recalculation of recent cpu made when
  * timer_ticks () % TIMER_FREQ == 0
 
  * Calculating load_avg updated every second when
@@ -661,7 +741,7 @@ void mlfqs_calc_priority (struct thread *t)
 }
 
 /********NEW CHANGE ******************************/
-/* Calculate recent CPU using calculated load_avg and recent_cpu 
+/* Calculate recent CPU using calculated load_avg and recent_cpu
 recent_cpu = (2 * load_avg) / (2 * load_avg + 1) * recent_cpu + nice */
 void mlfqs_calc_cpu (struct thread *t)
 {
@@ -690,7 +770,7 @@ void mlfqs_calc_cpu (struct thread *t)
 }
 
 /********NEW CHANGE! ******************************/
-/* Calculate load_avg using number of ready_threads and current load_avg 
+/* Calculate load_avg using number of ready_threads and current load_avg
     load_avg = (59/60) * load_avg + (1/60) * ready_threads */
 void mlfqs_calc_load_avg (void)
 {
@@ -700,16 +780,16 @@ void mlfqs_calc_load_avg (void)
 	// Fixed point to hold first multiplication value
     	int multiply1;
 	// Fixed point to hold second multiplication value
-     	int multiply2;                
+     	int multiply2;
 
     /* Use list_size from list.c to find number of ready threads */
-    int ready_threads = list_size(&ready_list); 
+    int ready_threads = list_size(&ready_list);
 
-    /* multiply1 = (59/60) * loadAvg */    
+    /* multiply1 = (59/60) * loadAvg */
     multiply1 = mulFixedFixed(divFixedFixed(numFiftyNine, numSixty), load_avg);
 
-    /* multiply2 = (1/60) * ready_threads */   
-    multiply2 = mulFixedInt(divFixedFixed(numOne, numSixty), ready_threads); 
+    /* multiply2 = (1/60) * ready_threads */
+    multiply2 = mulFixedInt(divFixedFixed(numOne, numSixty), ready_threads);
 
     /* load_avg = multiply1 + multiply2 -> (59/60) * load_avg + (1/60) * ready_threads */
     load_avg = addFixedFixed(multiply1, multiply2);
