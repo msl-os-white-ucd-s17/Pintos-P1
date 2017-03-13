@@ -97,21 +97,27 @@ the time spent in the timer interrupt handler.
 
 
 B1: Copy here the declaration of each new or changed struct or struct member, global or static variable, typedef, or enumeration. Identify the purpose of each in 25 words or less.
+> A macro `#define NESTED_MAX_DEPTH 9` was declared as a cutoff for the depth level of nested priority donation.
+> A variable `int effective_priority` was added to hold the donated priority for threads.
+> A structure `struct list donors` that functions as a linked-list was defined to enable access to a thread's held locks.
+> A variable `struct lock *blocking_lock` was added to indicate which lock a thread is waiting on. It also functions as a conditional variable for the loop in `void lock_acquire (struct lock *lock)`.
+> A struct member `struct list_elem elem` was added to `struct lock` to obtain the actual lock structure held by a `struct list_elem` in `struct list donors`.
+> A struct member `int high_priority` was added to `struct lock` to indicate the highest donated priority of the thread currently holding the lock.
 
 B2: Explain the data structure used to track priority donation.
-
-Use ASCII art to diagram a nested donation.  (Alternately, submit a .png file.)
 
 
 #### ALGORITHMS
 
 
 B3: How do you ensure that the highest priority thread waiting for a lock, semaphore, or condition variable wakes up first?
+> Given that 
 
 B4: Describe the sequence of events when a call to lock_acquire() causes a priority donation.  How is nested donation handled?
+> 
 
 B5: Describe the sequence of events when lock_release() is called on a lock that a higher-priority thread is waiting for.
-
+> The highest priority thread will be woken up by `void sema_up(struct semaphore *sema)` because the first thread in the semaphore wait list is the one with the highest priority.
 
 #### SYNCHRONIZATION
 
