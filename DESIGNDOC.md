@@ -134,7 +134,8 @@ C1: Copy here the declaration of each new or changed struct or struct member, gl
 #### ALGORITHMS
 
 C2: Suppose threads A, B, and C have nice values 0, 1, and 2. Each has a recent_cpu value of 0.  Fill in the table below showing the scheduling decision and the priority and recent_cpu values for each thread after each given number of timer ticks.
-
+ 
+ 
 <table>
             <thead>
                         <tr>
@@ -153,19 +154,20 @@ C2: Suppose threads A, B, and C have nice values 0, 1, and 2. Each has a recent_
                         </tr>
             </thead>
             <tbody>
-            <tr><td>0</td></tr>
-            <tr><td>4</td></tr>
-            <tr><td>8</td></tr>
-            <tr><td>12</td></tr>
-            <tr><td>16</td></tr>
-            <tr><td>20</td></tr>
-            <tr><td>24</td></tr>
-            <tr><td>28</td></tr>
-            <tr><td>32</td></tr>
-            <tr><td>36</td></tr>
-
+            <tr><td>0</td><td>0</td><td>0</td><td>0</td><td>63</td><td>61</td><td>59</td><td>A</td></tr>
+            <tr><td>4</td><td>4</td><td>0</td><td>0</td><td>62</td><td>61</td><td>59</td><td>A</td></tr>
+            <tr><td>8</td><td>8</td><td>0</td><td>0</td><td>61</td><td>61</td><td>59</td><td>B</td></tr>
+            <tr><td>12</td><td>8</td><td>4</td><td>0</td><td>61</td><td>60</td><td>59</td><td>A</td></tr>
+            <tr><td>16</td><td>12</td><td>4</td><td>0</td><td>60</td><td>60</td><td>59</td><td>B</td></tr>
+            <tr><td>20</td><td>12</td><td>8</td><td>0</td><td>60</td><td>59</td><td>59</td><td>A</td></tr>
+            <tr><td>24</td><td>16</td><td>8</td><td>0</td><td>59</td><td>59</td><td>59</td><td>C</td></tr>
+            <tr><td>28</td><td>16</td><td>8</td><td>4</td><td>59</td><td>59</td><td>58</td><td>B</td></tr>
+            <tr><td>32</td><td>16</td><td>12</td><td>4</td><td>59</td><td>58</td><td>58</td><td>A</td></tr>
+            <tr><td>36</td><td>20</td><td>12</td><td>4</td><td>58</td><td>58</td><td>58</td><td>C</td></tr>
             </tbody>
-</table>
+</table>  
+
+
 
 C3: Did any ambiguities in the scheduler specification make values in the table uncertain?  If so, what rule did you use to resolve them? Does this match the behavior of your scheduler?
 
@@ -178,6 +180,10 @@ C5: Briefly critique your design, pointing out advantages and disadvantages in y
 
 C6: The assignment explains arithmetic for fixed-point math in detail, but it leaves it open to you to implement it.  Why did you decide to implement it the way you did?  If you created an abstraction layer for fixed-point math, that is, an abstract data type and/or a set of functions or macros to manipulate fixed-point numbers, why did you do so?  If not, why not?
 
+A fixed-point.h file was created for the arithmetic implementation of the fixed-point math. While the
+pintos guide does describe the math in detail, https://jeason.gitbooks.io/pintos-reference-guide-sysu/content/Advanced%20Scheduler.html
+was also used as a resource in determining what functions were needed to implement the math. Standard
+functions were used for better readability of the code.
 
 ### SURVEY QUESTIONS
 
