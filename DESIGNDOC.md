@@ -190,7 +190,7 @@ C5: Briefly critique your design, pointing out advantages and disadvantages in y
 
 C6: The assignment explains arithmetic for fixed-point math in detail, but it leaves it open to you to implement it.  Why did you decide to implement it the way you did?  If you created an abstraction layer for fixed-point math, that is, an abstract data type and/or a set of functions or macros to manipulate fixed-point numbers, why did you do so?  If not, why not?
 
-A fixed-point.h file was created for the arithmetic implementation of the fixed-point math. While the
+>A fixed-point.h file was created for the arithmetic implementation of the fixed-point math. While the
 pintos guide does describe the math in detail, https://jeason.gitbooks.io/pintos-reference-guide-sysu/content/Advanced%20Scheduler.html
 was also used as a resource in determining what functions were needed to implement the math. Standard
 functions were used for better readability of the code.
