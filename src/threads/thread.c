@@ -802,7 +802,7 @@ void mlfqs_recalculate (void)
 		for(e = list_begin(&all_list); e != list_end(&all_list); e = list_next(e))
 		{
 			/* Conversion from list_elem back to structure object */
-			t = list_entry(e, struct thread, allelem);
+			//t = list_entry(e, struct thread, allelem);
 			mlfqs_calc_cpu(t);
 			mlfqs_calc_priority(t);
 		}
