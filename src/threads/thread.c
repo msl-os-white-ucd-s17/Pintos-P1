@@ -691,10 +691,10 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
  * thread from mlfqs_calc_priority, set priority again
 
  * Recalculation of recent cpu made when 
- * timer_ticks () % TIMER_FREQ == 0
+ * timer_ticks () % TIMER_FREQ == 0 -> implemented in timer.c
 
  * Calculating load_avg updated every second when
- * timer_ticks () % TIMER_FREQ == 0 */
+ * timer_ticks () % TIMER_FREQ == 0 -> implemented in timer.c
 
 /********NEW CHANGE! ******************************/
 /* Calculates the thread's priority based on new nice 
@@ -703,18 +703,20 @@ void mlfqs_calc_priority (struct thread *t)
 {
 //    if (t != idle_thread)   // Make sure thread is running
 //    {
-  int multiply;
-      int num2 = intToFixed(2);
-      int num4 = intToFixed(4);
-      int divider;
-      int dividerMINUSnice;
-      int niceValue = t->nice;
-      intToFixed(PRI_MAX);
+  	int multiply;
+    int num4 = intToFixed(4);
+    int divider;
+    int subtracter;
+    int niceValue = t->nice;
 
-        multiply = mulFixedInt(num2, niceValue);
-        divider = divFixedInt(t->recent_cpu, num4);
-        dividerMINUSnice = subFixedFixed(divider, multiply);
-        t->priority = subFixedInt(dividerMINUSnice, PRI_MAX);
+      	/* divider = recent_cpu / 4 */
+      	divider = divFixedFixed(intToFixed(t->recent_cpu), num4);
+      	/* multiply = nice * 2 */
+        multiply = mulFixedInt(intToFixed(niceValue), 2;
+        /* subtracter = PRI_MAX - divider */
+        subtracter = subFixedFixed(intToFixed(PRI_MAX), intToFixed(divider));
+        t->priority = subFixedFixed(intToFixed(subtracter), intToFixed(multiply));
+      //  t->priority = fixedToInt_RoundNearest(t->priority);
 
         /* Compare thread priority to make sure it is withing range of PRI_MIN and PRI_MAX */
         if(t->priority < PRI_MIN)     // If priority is smaller than defaul PRI_MIN, make it PRI_MIN
@@ -738,17 +740,13 @@ void mlfqs_calc_cpu (struct thread *t)
 //    intToFixed(multiplyVal);                // Fixed point to hold multiplied value
   int divided;
   int divider;
-  int addedVal;
   int multiplyVal;
 
       /* divided = (2 * load_avg) */
-      divided = mulFixedFixed(numTwo, load_avg);
+      divided = mulFixedInt(numTwo, load_avg);
 
-      /* addedVal = load_avg + 1 */
-      addedVal = addFixedFixed(load_avg, numOne);
-
-      /* divider = 2 * addedVal */
-      divider = mulFixedFixed(numTwo, addedVal);
+      /* divider = (2 * load_avg) + 1 */
+      divider = addFixedFixed(mulFixedInt(numTwo, load_avg), 1);
 
       /* multiplyVal = (divided / divider) * recent_cpu */
       multiplyVal = mulFixedInt(divFixedFixed(divided, divider), t->recent_cpu);
@@ -774,7 +772,7 @@ void mlfqs_calc_load_avg (void)
     int ready_threads = list_size(&ready_list); 
 
     /* multiply1 = (59/60) * loadAvg */    
-    multiply1 = mulFixedFixed(divFixedFixed(numFiftyNine, numSixty), load_avg);
+    multiply1 = mulFixedInt(divFixedFixed(numFiftyNine, numSixty), load_avg);
 
     /* multiply2 = (1/60) * ready_threads */   
     multiply2 = mulFixedInt(divFixedFixed(numOne, numSixty), ready_threads); 
@@ -787,5 +785,26 @@ void mlfqs_calc_load_avg (void)
 /* Recent cpu for runnning thread increment by 1 for each interrupt */
 void mlfqs_increment (void)
 {
-  thread_current()-> recent_cpu = addFixedInt(thread_current()->recent_cpu, 1);
+	int numOne = intToFixed(1);
+	thread_current()->recent_cpu = addFixedInt(numOne, thread_current()->recent_cpu);
 }
+
+/********NEW CHANGE! ******************************/
+/* Recalculates and updates priority and recent_cpu all other threads in list */
+/* pintos page 62: list_elem */
+void mlfqs_recalculate (void)
+{
+	struct thread *t;
+	struct list_elem *e;
+		/* For all process recalculate cpu and priority
+			->Iteration algorithm found from kernel/list.h example */
+		for(e = list_begin(&all_list); e != list_end(&all_list); e = list_next(e))
+		{
+			/* Conversion from list_elem back to structure object */
+			t = list_entry(e, struct thread, elem);
+			mlfqs_calc_cpu(t);
+			mlfqs_calc_priority(t);
+		}
+}
+
+
