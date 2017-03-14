@@ -794,6 +794,7 @@ void mlfqs_increment (void)
 /* pintos page 62: list_elem */
 void mlfqs_recalculate (void)
 {
+	mlfqs_calc_load_avg();
 	struct thread *t;
 	struct list_elem *e;
 		/* For all process recalculate cpu and priority
