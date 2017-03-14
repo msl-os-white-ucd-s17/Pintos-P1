@@ -30,12 +30,12 @@ Sara Kim <sara.kim@ucdenver.edu>
 
 A1: Copy here the declaration of each new or changed struct or struct member, global or static variable, typedef, or enumeration. Identify the purpose of each in 25 words or less.
 
-In thread.h:   
+> * In thread.h:   
   sleepTickCount : int64_t
   - In thread struct, holds thread tick count used to determine when a thread
     is ready to be unblocked.
 
-In timer.c:  
+> * In timer.c:  
   sleep_list : static struct list
   - A list of sleeping or blocked threads that are added in timer_sleep() 
     and removed in timer_interrupt()
@@ -45,7 +45,7 @@ In timer.c:
 
 A2: Briefly describe what happens in a call to timer_sleep(), including the effects of the timer interrupt handler.
 
-The timer_sleep() function begins by checking that the tick count is >= 0
+>The timer_sleep() function begins by checking that the tick count is >= 0
 because if the ticks are 0 or below then there is no need to continue on.
 Our tick argument, sleepTickCount, is then calculated by adding the global
 ticks to this argument. The current thread is then placed into the 
@@ -58,7 +58,7 @@ since the member was initialized.
 
 A3: What steps are taken to minimize the amount of time spent in the timer interrupt handler?
 
-Keeping the list sorted helps to minimize the amount of time spent in the
+>Keeping the list sorted helps to minimize the amount of time spent in the
 timer interrupt handler. Also, within the while loop if the front thread
 of the sleep_list's tick count does not need to be woken up yet, then the 
 the while loop is broken. If it does need to be woken up, the next thread
@@ -69,13 +69,13 @@ iterate through the entire sleep list at every interrupt.
 
 A4: How are race conditions avoided when multiple threads call timer_sleep() simultaneously?
 
-Race conditions are avoided when multiple threads are called by disabline the interrupts.
+>Race conditions are avoided when multiple threads are called by disabline the interrupts.
 These are disabled in timer sleep and this results in only one thread being in the function
 at a time so that no other thread can take the current thread off of the CPU.
 
 A5: How are race conditions avoided when a timer interrupt occurs during a call to timer_sleep()?
 
-Race conditions are avoided when a timer interrupt occurs during a call to timer_sleep in the
+>Race conditions are avoided when a timer interrupt occurs during a call to timer_sleep in the
 same way as mentioned above. The interrupts are disabled so that there is no way for
 a timer interrrupt to occur until the end of the function when the interrupts are
 re-enabled.
@@ -85,7 +85,7 @@ re-enabled.
 
 A6: Why did you choose this design? In what ways is it superior to another design you considered?
 
-Initially it was considered to create a seperate wake sleeping thread method, 
+>Initially it was considered to create a seperate wake sleeping thread method, 
 which also would have worked, but our current implementation is simpler. This
 design was chosen because it made the most sense when it comes down to minimizing
 the time spent in the timer interrupt handler.
