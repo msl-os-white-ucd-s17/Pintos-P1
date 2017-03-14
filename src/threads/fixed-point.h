@@ -5,8 +5,8 @@
 
 #define F 16
 
-#define fixedToInt_RoundNearest(x)(x >= ? ((x + (1 << (F - 1))) >> F) \
-										: ((x - (1 << (F - 1))) >> F))
+#define fixedToInt_RoundNearest(x)(x >= 0 ? ((x + (1 << (F - 1))) >> F) \
+				   : ((x - (1 << (F - 1))) >> F))
 
 /* x & y = Fixed Point Numbers */
 /* n = Integer */
