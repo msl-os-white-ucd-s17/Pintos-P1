@@ -227,8 +227,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
       /* Recalculation of recent cpu and load average updated whenever timer_ticks()% TIMER_FREQ ==0 */
       if(ticks % TIMER_FREQ == 0)
       {
-          mlfqs_calc_load_avg();
-          mlfqs_calc_cpu(thread_current());
+          mlfqs_recalculate();
       }
   }
 
