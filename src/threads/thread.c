@@ -712,7 +712,7 @@ void mlfqs_calc_priority (struct thread *t)
       	/* divider = recent_cpu / 4 */
       	divider = divFixedFixed(intToFixed(t->recent_cpu), num4);
       	/* multiply = nice * 2 */
-        multiply = mulFixedInt(intToFixed(niceValue), 2;
+        multiply = mulFixedInt(intToFixed(niceValue, 2);
         /* subtracter = PRI_MAX - divider */
         subtracter = subFixedFixed(intToFixed(PRI_MAX), intToFixed(divider));
         t->priority = subFixedFixed(intToFixed(subtracter), intToFixed(multiply));
@@ -806,5 +806,4 @@ void mlfqs_recalculate (void)
 			mlfqs_calc_priority(t);
 		}
 }
-
 
