@@ -218,8 +218,14 @@ timer_interrupt (struct intr_frame *args UNUSED)
     /* For each interrupt, recent cpu for running thread increment by 1 */
       mlfqs_increment();
 
+      /* Priority is recalculated once every fourth clock tick */
+      if (ticks % 4 == 0)
+      {
+        mlfqs_calc_priority(thread_current());
+      }
+
       /* Recalculation of recent cpu and load average updated whenever timer_ticks()% TIMER_FREQ ==0 */
-      if(ticks%TIMER_FREQ == 0)
+      if(ticks % TIMER_FREQ == 0)
       {
           mlfqs_calc_load_avg();
           mlfqs_calc_cpu(thread_current());
