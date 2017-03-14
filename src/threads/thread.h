@@ -92,18 +92,20 @@ struct thread
     /* Shared between thread.c, synch.c and timer.c. */
     struct list_elem elem;              /* List element. */
 
+    /********NEW CHANGE ******************************/
+    /* Holds the nice fixed value of thread for MLFQ */
+    int nice;
+    /********NEW CHANGE ******************************/
+    /* Holds the recent_cpu fixed value of thread for MLFQ */
+    int recent_cpu;
 
-		/* Priority Scheduler Items */
-		int effective_priority;             /* Effective priority for priority donation */
+    /* Priority Scheduler Items */
+    int effective_priority;             /* Effective priority for priority donation */
     struct list donors;                 /* Locks held for priority donation. */
     struct lock *blocking_lock;         /* Lock waiting on for priority donation. */
-		//struct list_elem donor_elem;
+    //struct list_elem donor_elem;
 
-		/* mlfqs items */
-    int nice;                           /* Niceness for 4.4BSD scheduler. */
-    int recent_cpu;                		  /* Recent CPU for 4.4BSD scheduler. */
-
-		/* Alarm Clock item */
+    /* Alarm Clock item */
     int64_t sleepTickCount;             /* Wakeup ticks used by timer sleep */
     
 
@@ -163,5 +165,13 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
+
+/********NEW CHANGE ******************************/
+/* Added functions for MLFQ */
+void mlfqs_calc_priority (struct thread *t);
+void mlfqs_calc_cpu (struct thread *t);
+void mlfqs_calc_load_avg (void);
+void mlfqs_increment (void);
+void mlfqs_recalculate (void);
 
 #endif /* threads/thread.h */

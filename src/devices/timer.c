@@ -96,18 +96,18 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-		// If ticks are 0 or negative no need to continue
-	  if (ticks <= 0)
+    // If ticks are 0 or negative no need to continue
+    if (ticks <= 0)
     return;
 
-  struct thread *cur_thread;	// Calling thread
-  enum intr_level old_level;	// Interrupts ON or OFF?
+  struct thread *cur_thread;  // Calling thread
+  enum intr_level old_level;  // Interrupts ON or OFF?
 
-  ASSERT (intr_get_level () == INTR_ON);	// Do not proceed if interrupts are already OFF
+  ASSERT (intr_get_level () == INTR_ON);  // Do not proceed if interrupts are already OFF
 
-  old_level = intr_disable ();	// Disable interrupts so that ticks may be reliably calculated and thread can be blocked
+  old_level = intr_disable ();  // Disable interrupts so that ticks may be reliably calculated and thread can be blocked
 
-  cur_thread = thread_current ();	// Calling thread
+  cur_thread = thread_current (); // Calling thread
   cur_thread->sleepTickCount = timer_ticks () + ticks;
 
   list_insert_ordered (&sleep_list, &cur_thread->elem,
@@ -188,8 +188,8 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
-  struct list_elem *p_elem;	// Pointer to thread wake up time
-  struct thread *p_thread;	// Pointer to TCB
+  struct list_elem *p_elem; // Pointer to thread wake up time
+  struct thread *p_thread;  // Pointer to TCB
   bool preempt = false;
 
   ticks++;
@@ -197,18 +197,40 @@ timer_interrupt (struct intr_frame *args UNUSED)
 
   while (!list_empty(&sleep_list))
     {
-      p_elem = list_front (&sleep_list);	// Thread closest to wake up time
-      p_thread = list_entry (p_elem, struct thread, elem);	// Get TCB from sleep list element
-      if (p_thread->sleepTickCount > ticks)	// Terminate if sleepTickCount > ticks because all succeeding elements are guaranteed
+      p_elem = list_front (&sleep_list);  // Thread closest to wake up time
+      p_thread = list_entry (p_elem, struct thread, elem);  // Get TCB from sleep list element
+      if (p_thread->sleepTickCount > ticks) // Terminate if sleepTickCount > ticks because all succeeding elements are guaranteed
         {
           break;
         }
-      list_remove (p_elem);	// Remove from sleep list
-      thread_unblock (p_thread);	// Unblock play
+      list_remove (p_elem); // Remove from sleep list
+      thread_unblock (p_thread);  // Unblock play
       preempt = true;
     }
   if (preempt)
-    intr_yield_on_return ();	// Schedule thread that have been woken up
+    intr_yield_on_return ();  // Schedule thread that have been woken up
+
+
+  /********NEW CHANGE ******************************/
+  /* Run statement when thread_mlfqs is set to true/MLFQ scheduler selected */
+  if(thread_mlfqs)
+  {
+    /* For each interrupt, recent cpu for running thread increment by 1 */
+      mlfqs_increment();
+
+      /* Priority is recalculated once every fourth clock tick */
+      if (ticks % 4 == 0)
+      {
+        mlfqs_calc_priority(thread_current());
+      }
+
+      /* Recalculation of recent cpu and load average updated whenever timer_ticks()% TIMER_FREQ ==0 */
+      if(ticks % TIMER_FREQ == 0)
+      {
+          mlfqs_recalculate();
+      }
+  }
+
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
