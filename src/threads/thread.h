@@ -106,10 +106,6 @@ struct thread
     struct lock *blocking_lock;         /* Lock waiting on for priority donation. */
 		//struct list_elem donor_elem;
 
-		/* mlfqs items */
-    int nice;                           /* Niceness for 4.4BSD scheduler. */
-    int recent_cpu;                		  /* Recent CPU for 4.4BSD scheduler. */
-
 		/* Alarm Clock item */
     int64_t sleepTickCount;             /* Wakeup ticks used by timer sleep */
 
