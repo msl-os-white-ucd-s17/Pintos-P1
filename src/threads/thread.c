@@ -387,7 +387,7 @@ update_priority (struct thread *t)
   int highPriority = t->priority;
   int lock_priority;
 
-  if (!list_empty (&t->donors))
+  if (!list_empty (&t->held_locks))
     {
      
       list_sort (&t->held_locks, priority_lock_compare, NULL);
